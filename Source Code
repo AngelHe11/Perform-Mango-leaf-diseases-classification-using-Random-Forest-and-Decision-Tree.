@@ -1,0 +1,114 @@
+from google.colab import drive
+drive.mount('/content/drive')
+
+# Set Up Import Libraries
+
+# Install any missing libraries
+!pip install -q scikit-learn pandas matplotlib
+
+
+# Import Libraries and Define Helper Functions
+
+import os
+import cv2
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import LabelEncoder
+
+# Load and Preprocess the Data
+
+# Define paths and parameters
+# Update this path to your actual path to the mango leaf dataset within your Google Drive
+data_dir = '/content/drive/MyDrive/Lab 01 Task/MangoLeafBD Dataset'  
+img_size = (240, 320)
+
+# Preprocess images and labels
+def load_images_and_labels(data_dir, img_size):
+    labels = []
+    images = []
+
+    for category in os.listdir(data_dir):
+        category_path = os.path.join(data_dir, category)
+        if os.path.isdir(category_path):
+            for img_file in os.listdir(category_path):
+                img_path = os.path.join(category_path, img_file)
+                img = cv2.imread(img_path)
+                img = cv2.resize(img, img_size)
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                images.append(img)
+                labels.append(category)
+
+    images = np.array(images)
+    labels = np.array(labels)
+    return images, labels
+
+# Load the images and labels
+images, labels = load_images_and_labels(data_dir, img_size)
+
+# Encode labels
+le = LabelEncoder()
+labels = le.fit_transform(labels)
+
+# Prepare the Data for Training
+
+# Flatten images
+X = images.reshape(images.shape[0], -1)
+y = labels
+
+# Split data into train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Train and Evaluate the Decision Tree and Random Forest Classifiers
+
+Decision Tree Classifier
+
+# Initialize and train the Decision Tree Classifier
+dt_classifier = DecisionTreeClassifier(random_state=42)
+dt_classifier.fit(X_train, y_train)
+
+# Predict and evaluate
+y_pred_dt = dt_classifier.predict(X_test)
+dt_accuracy = accuracy_score(y_test, y_pred_dt)
+print("Decision Tree Classifier Accuracy:", dt_accuracy)
+print("Classification Report for Decision Tree:\n", classification_report(y_test, y_pred_dt))
+print("Confusion Matrix for Decision Tree:\n", confusion_matrix(y_test, y_pred_dt))
+
+Random Forest Classifier
+
+# Initialize and train the Random Forest Classifier
+rf_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
+rf_classifier.fit(X_train, y_train)
+
+# Predict and evaluate
+y_pred_rf = rf_classifier.predict(X_test)
+rf_accuracy = accuracy_score(y_test, y_pred_rf)
+print("Random Forest Classifier Accuracy:", rf_accuracy)
+print("Classification Report for Random Forest:\n", classification_report(y_test, y_pred_rf))
+print("Confusion Matrix for Random Forest:\n", confusion_matrix(y_test, y_pred_rf))
+
+
+# Visualize Results
+
+import seaborn as sns
+
+def plot_confusion_matrix(cm, classes, title):
+    plt.figure(figsize=(10, 7))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=classes, yticklabels=classes)
+    plt.xlabel('Predicted Labels')
+    plt.ylabel('True Labels')
+    plt.title(title)
+    plt.show()
+
+
+# Plot confusion matrix for Decision Tree
+plot_confusion_matrix(confusion_matrix(y_test, y_pred_dt), le.classes_, "Decision Tree Confusion Matrix")
+
+
+
+# Plot confusion matrix for Random Forest
+plot_confusion_matrix(confusion_matrix(y_test, y_pred_rf), le.classes_, "Random Forest Confusion Matrix")
